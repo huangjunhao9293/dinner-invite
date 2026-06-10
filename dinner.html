@@ -1,0 +1,581 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<!-- 微信核心适配：禁止缩放、强制竖屏、识别为网页应用 -->
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="format-detection" content="telephone=no">
+<title>晚餐邀请</title>
+<!-- 替换字体为微信兼容的本地字体（避免加载谷歌字体卡顿） -->
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+  :root {
+    --gold: #C9A96E;
+    --gold-light: #E2CC9C;
+    --gold-dim: #8B7355;
+    --dark: #13110E;
+    --cream: #F5EDE0;
+    --text-dim: #847B6F;
+  }
+
+  body {
+    background: #0A0908;
+    color: var(--cream);
+    /* 改用微信内置字体，避免加载外部字体 */
+    font-family: 'PingFang SC', 'Microsoft YaHei', 'Heiti SC', sans-serif;
+    min-height: 100vh;
+    min-height: 100dvh;
+    overflow-x: hidden;
+    /* 微信触摸优化 */
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* ========== 邀请卡 ========== */
+  .invite-page {
+    position: fixed; inset: 0; z-index: 100;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    background: #0A0908;
+    transition: opacity 0.8s ease, transform 0.8s ease;
+    padding: 24px;
+  }
+  .invite-page.hiding { opacity: 0; transform: scale(1.05); pointer-events: none; }
+  .invite-page::before {
+    content: ''; position: absolute; top: -20%; left: 50%; transform: translateX(-50%);
+    width: 400px; height: 400px;
+    background: radial-gradient(circle, rgba(201,169,110,0.06) 0%, transparent 70%);
+    pointer-events: none;
+  }
+
+  .invite-card {
+    width: 100%; max-width: 380px;
+    background: linear-gradient(170deg, #1E1A15 0%, #15120E 50%, #1A1612 100%);
+    border: 1px solid rgba(201,169,110,0.15);
+    border-radius: 12px; padding: 48px 36px; text-align: center;
+    position: relative; overflow: hidden;
+    animation: fadeInUp 1s ease 0.2s both;
+  }
+  .invite-card::before {
+    content: ''; position: absolute; inset: 8px;
+    border: 1px solid rgba(201,169,110,0.06); border-radius: 8px; pointer-events: none;
+  }
+
+  .envelope-top { margin-bottom: 28px; }
+  .envelope-top .orn-line { display: flex; align-items: center; justify-content: center; gap: 14px; }
+  .envelope-top .orn-line span { height: 1px; width: 50px; background: linear-gradient(90deg, transparent, var(--gold-dim), transparent); }
+  .envelope-top .orn-line .diamond { width: 6px; height: 6px; border: 1px solid var(--gold); transform: rotate(45deg); }
+
+  .invite-emoji {
+    font-size: 48px; margin: 20px 0 24px; display: block;
+    filter: drop-shadow(0 4px 12px rgba(201,169,110,0.15));
+    animation: floatEmoji 3s ease-in-out infinite;
+  }
+  @keyframes floatEmoji { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-6px)} }
+
+  .invite-label { font-size:9px; letter-spacing:6px; text-transform:uppercase; color:var(--gold); margin-bottom:20px; font-weight:500; }
+  .invite-name { font-family:'STSong', 'Noto Serif SC', serif; font-size:28px; font-weight:600; color:var(--cream); letter-spacing:6px; margin-bottom:16px; }
+  .invite-text { font-size:14px; color:var(--text-dim); line-height:2; letter-spacing:1px; font-weight:300; }
+  .invite-text strong { color:var(--gold-light); font-weight:500; }
+
+  .invite-divider { display:flex; align-items:center; justify-content:center; gap:10px; margin:24px 0; }
+  .invite-divider .id-line { width:40px; height:1px; background:linear-gradient(90deg,transparent,var(--gold-dim),transparent); }
+  .invite-divider .id-dot { width:3px; height:3px; border-radius:50%; background:var(--gold-dim); }
+
+  .open-btn {
+    display:inline-flex; align-items:center; gap:8px; margin-top:8px; padding:14px 40px;
+    background:linear-gradient(135deg,var(--gold-dim),var(--gold)); border:none; border-radius:40px;
+    color:#13110E; font-size:14px; font-weight:600;
+    letter-spacing:4px; cursor:pointer; transition:all 0.3s ease;
+    box-shadow:0 4px 20px rgba(201,169,110,0.2); position:relative; overflow:hidden;
+    /* 微信点击优化 */
+    -webkit-tap-highlight-color: transparent;
+  }
+  .open-btn::after {
+    content:''; position:absolute; top:-50%; left:-50%; width:200%; height:200%;
+    background:linear-gradient(45deg,transparent 30%,rgba(255,255,255,0.15) 50%,transparent 70%);
+    transform:translateX(-100%); animation:shimmer 3s infinite;
+  }
+  @keyframes shimmer { 0%{transform:translateX(-100%)} 100%{transform:translateX(100%)} }
+  .open-btn:active { transform:scale(0.96); box-shadow:0 2px 10px rgba(201,169,110,0.15); }
+  .open-btn .btn-icon { font-size:16px; }
+  .invite-hint { margin-top:16px; font-size:10px; color:rgba(132,123,111,0.5); letter-spacing:2px; }
+
+  .corner { position:absolute; width:18px; height:18px; z-index:2; }
+  .corner::before,.corner::after { content:''; position:absolute; background:rgba(201,169,110,0.12); }
+  .c-tl{top:12px;left:12px} .c-tl::before{top:0;left:0;width:18px;height:1px} .c-tl::after{top:0;left:0;width:1px;height:18px}
+  .c-tr{top:12px;right:12px} .c-tr::before{top:0;right:0;width:18px;height:1px} .c-tr::after{top:0;right:0;width:1px;height:18px}
+  .c-bl{bottom:12px;left:12px} .c-bl::before{bottom:0;left:0;width:18px;height:1px} .c-bl::after{bottom:0;left:0;width:1px;height:18px}
+  .c-br{bottom:12px;right:12px} .c-br::before{bottom:0;right:0;width:18px;height:1px} .c-br::after{bottom:0;right:0;width:1px;height:18px}
+
+  @keyframes fadeInUp { from{opacity:0;transform:translateY(20px)} to{opacity:1;transform:translateY(0)} }
+
+  /* ========== 菜单页面 ========== */
+  .menu-page {
+    min-height: 100vh; min-height: 100dvh;
+    background: #0A0908;
+    padding: 0 0 60px;
+    opacity: 0; transform: translateY(20px);
+    transition: opacity 0.8s ease 0.3s, transform 0.8s ease 0.3s;
+  }
+  .menu-page.showing { opacity: 1; transform: translateY(0); }
+
+  /* 背景粒子 */
+  .menu-page::before {
+    content: '';
+    position: fixed; inset: 0; pointer-events: none; z-index: 0;
+    background:
+      radial-gradient(ellipse 500px 300px at 30% 10%, rgba(201,169,110,0.03), transparent),
+      radial-gradient(ellipse 400px 400px at 70% 85%, rgba(164,86,90,0.02), transparent),
+      radial-gradient(ellipse 300px 200px at 50% 50%, rgba(201,169,110,0.015), transparent);
+  }
+
+  /* 菜单头部 */
+  .menu-header {
+    text-align: center; padding: 52px 24px 36px; position: relative; z-index: 1;
+  }
+
+  .menu-header::after {
+    content: ''; position: absolute; bottom: 0; left: 50%; transform: translateX(-50%);
+    width: 80%; height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(201,169,110,0.15), transparent);
+  }
+
+  .mh-orn { margin-bottom: 20px; display: flex; align-items: center; justify-content: center; gap: 12px; }
+  .mh-orn span { width: 60px; height: 1px; background: linear-gradient(90deg, transparent, rgba(201,169,110,0.3), transparent); }
+  .mh-orn .mh-diamond { width: 8px; height: 8px; border: 1px solid var(--gold); transform: rotate(45deg); }
+
+  .mh-sub {
+    font-size: 8px; letter-spacing: 8px;
+    text-transform: uppercase; color: var(--gold); margin-bottom: 14px; font-weight: 500;
+  }
+
+  .menu-header h1 {
+    font-family:'STSong', 'Noto Serif SC', serif; font-size: 36px; font-weight: 700;
+    color: var(--cream); letter-spacing: 10px; margin-bottom: 10px;
+    text-shadow: 0 0 40px rgba(201,169,110,0.08);
+  }
+
+  .mh-en {
+    font-style: italic;
+    font-size: 12px; color: var(--gold-dim); letter-spacing: 4px;
+  }
+
+  .mh-orn2 { margin-top: 20px; display: flex; align-items: center; justify-content: center; gap: 6px; }
+  .mh-orn2 .dot { width: 2px; height: 2px; border-radius: 50%; background: var(--gold-dim); }
+
+  /* 菜品列表 */
+  .dish-list { padding: 20px 20px 0; max-width: 500px; margin: 0 auto; position: relative; z-index: 1; }
+
+  /* 华丽菜品卡片 */
+  .dish-card {
+    position: relative;
+    margin-bottom: 20px;
+    border-radius: 16px;
+    overflow: hidden;
+    opacity: 0; transform: translateY(20px);
+    transition: opacity 0.6s ease, transform 0.6s ease;
+  }
+  .dish-card.visible { opacity: 1; transform: translateY(0); }
+
+  .dish-inner {
+    display: flex; gap: 0; align-items: stretch;
+    background: linear-gradient(135deg, rgba(30,26,21,0.95) 0%, rgba(21,18,14,0.98) 100%);
+    border: 1px solid rgba(201,169,110,0.1);
+    border-radius: 16px;
+    overflow: hidden;
+    position: relative;
+  }
+
+  /* 卡片左侧光晕 */
+  .dish-inner::before {
+    content: ''; position: absolute; left: -20px; top: 50%; transform: translateY(-50%);
+    width: 100px; height: 100%; border-radius: 50%;
+    pointer-events: none; z-index: 1;
+  }
+
+  .dish-card.shrimp .dish-inner::before { background: radial-gradient(ellipse, rgba(255,183,77,0.07), transparent 70%); }
+  .dish-card.crayfish .dish-inner::before { background: radial-gradient(ellipse, rgba(220,60,60,0.06), transparent 70%); }
+  .dish-card.noodle .dish-inner::before { background: radial-gradient(ellipse, rgba(200,170,100,0.06), transparent 70%); }
+  .dish-card.watermelon .dish-inner::before { background: radial-gradient(ellipse, rgba(80,180,80,0.06), transparent 70%); }
+
+  /* 卡片右侧装饰线 */
+  .dish-inner::after {
+    content: ''; position: absolute; right: 0; top: 0; bottom: 0; width: 3px;
+    border-radius: 0 16px 16px 0;
+  }
+  .dish-card.shrimp .dish-inner::after { background: linear-gradient(to bottom, transparent, rgba(255,183,77,0.3), transparent); }
+  .dish-card.crayfish .dish-inner::after { background: linear-gradient(to bottom, transparent, rgba(220,60,60,0.25), transparent); }
+  .dish-card.noodle .dish-inner::after { background: linear-gradient(to bottom, transparent, rgba(200,170,100,0.25), transparent); }
+  .dish-card.watermelon .dish-inner::after { background: linear-gradient(to bottom, transparent, rgba(80,180,80,0.2), transparent); }
+
+  /* 菜品视觉区 */
+  .dish-visual {
+    width: 110px; min-height: 130px;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    position: relative; flex-shrink: 0;
+    padding: 16px 8px;
+  }
+
+  /* 视觉区背景 */
+  .dish-visual::before {
+    content: ''; position: absolute; inset: 0;
+    z-index: 0;
+  }
+  .dish-card.shrimp .dish-visual::before { background: linear-gradient(135deg, rgba(255,183,77,0.06), rgba(255,183,77,0.01)); }
+  .dish-card.crayfish .dish-visual::before { background: linear-gradient(135deg, rgba(220,60,60,0.05), rgba(220,60,60,0.01)); }
+  .dish-card.noodle .dish-visual::before { background: linear-gradient(135deg, rgba(200,170,100,0.05), rgba(200,170,100,0.01)); }
+  .dish-card.watermelon .dish-visual::before { background: linear-gradient(135deg, rgba(80,180,80,0.05), rgba(80,180,80,0.01)); }
+
+  /* 分隔竖线 */
+  .dish-visual::after {
+    content: ''; position: absolute; right: 0; top: 20%; bottom: 20%;
+    width: 1px;
+    background: linear-gradient(to bottom, transparent, rgba(201,169,110,0.1), transparent);
+  }
+
+  .dish-emoji {
+    font-size: 48px; position: relative; z-index: 1;
+    filter: drop-shadow(0 4px 16px rgba(0,0,0,0.3));
+    line-height: 1;
+  }
+
+  .dish-visual-label {
+    font-size: 7px; letter-spacing: 3px;
+    text-transform: uppercase; margin-top: 8px; position: relative; z-index: 1;
+    font-weight: 500;
+  }
+  .dish-card.shrimp .dish-visual-label { color: rgba(255,183,77,0.6); }
+  .dish-card.crayfish .dish-visual-label { color: rgba(220,80,80,0.5); }
+  .dish-card.noodle .dish-visual-label { color: rgba(200,170,100,0.5); }
+  .dish-card.watermelon .dish-visual-label { color: rgba(80,180,80,0.5); }
+
+  /* 菜品内容区 */
+  .dish-body {
+    flex: 1; padding: 20px 20px 18px 16px; display: flex; flex-direction: column; justify-content: center;
+    min-width: 0; position: relative; z-index: 1;
+  }
+
+  .dish-num {
+    font-style: italic;
+    font-size: 10px; color: var(--gold-dim); letter-spacing: 3px; margin-bottom: 6px;
+  }
+
+  .dish-name {
+    font-family:'STSong', 'Noto Serif SC', serif;
+    font-size: 22px; font-weight: 700; color: var(--cream);
+    letter-spacing: 5px; margin-bottom: 8px;
+  }
+
+  .dish-desc {
+    font-size: 12px; color: var(--text-dim); line-height: 1.8;
+    font-weight: 300; letter-spacing: 0.5px;
+  }
+
+  .dish-tag {
+    display: inline-flex; align-items: center; gap: 4px;
+    margin-top: 10px; padding: 3px 12px;
+    border-radius: 20px; font-size: 9px; letter-spacing: 2px;
+    border: 1px solid rgba(201,169,110,0.12);
+    color: var(--gold); background: rgba(201,169,110,0.04);
+    width: fit-content; font-weight: 400;
+  }
+
+  .dish-tag .tag-dot {
+    width: 4px; height: 4px; border-radius: 50%;
+  }
+  .dish-card.shrimp .tag-dot { background: rgba(255,183,77,0.6); }
+  .dish-card.crayfish .tag-dot { background: rgba(220,80,80,0.5); }
+  .dish-card.noodle .tag-dot { background: rgba(200,170,100,0.5); }
+  .dish-card.watermelon .tag-dot { background: rgba(80,180,80,0.5); }
+
+  /* 华丽分隔 */
+  .menu-sep {
+    display: flex; align-items: center; justify-content: center;
+    margin: 8px 40px; gap: 0; position: relative; height: 24px;
+  }
+  .menu-sep .ms-l { flex: 1; height: 1px; background: linear-gradient(90deg, transparent, rgba(201,169,110,0.12), transparent); }
+  .menu-sep .ms-sym {
+    width: 24px; height: 24px; display: flex; align-items: center; justify-content: center;
+    font-size: 8px; color: var(--gold-dim);
+  }
+
+  /* 底部 */
+  .menu-footer {
+    text-align: center; padding: 0 24px; position: relative; z-index: 1;
+    opacity: 0; transform: translateY(12px);
+    transition: opacity 0.6s ease, transform 0.6s ease;
+  }
+  .menu-footer.visible { opacity: 1; transform: translateY(0); }
+
+  .footer-letter {
+    font-family:'STSong', 'Noto Serif SC', serif; font-size: 14px;
+    color: var(--text-dim); line-height: 2.2; letter-spacing: 2px; font-weight: 400;
+    margin-bottom: 20px;
+  }
+  .footer-letter em { color: var(--gold-light); font-style: normal; font-weight: 600; }
+
+  .footer-orn { display:flex; align-items:center; justify-content:center; gap:10px; margin-bottom:14px; }
+  .footer-orn .fo-l { width:24px; height:1px; background:linear-gradient(90deg,transparent,var(--gold-dim),transparent); }
+  .footer-orn .fo-d { width:4px; height:4px; background:var(--gold-dim); transform:rotate(45deg); }
+
+  .footer-date { font-size:9px; letter-spacing:4px; color:rgba(132,123,111,0.4); }
+  .footer-love { margin-top:16px; font-size:20px; opacity:0.4; }
+
+  /* 背景浮动粒子 */
+  .particles {
+    position: fixed; inset: 0; pointer-events: none; z-index: 0; overflow: hidden;
+  }
+  .particle {
+    position: absolute; width: 2px; height: 2px; border-radius: 50%;
+    background: rgba(201,169,110,0.15);
+    animation: particleFloat linear infinite;
+  }
+  @keyframes particleFloat {
+    0% { transform: translateY(100vh) rotate(0deg); opacity: 0; }
+    10% { opacity: 1; }
+    90% { opacity: 1; }
+    100% { transform: translateY(-10vh) rotate(360deg); opacity: 0; }
+  }
+</style>
+</head>
+<body>
+
+<!-- 背景粒子 -->
+<div class="particles" id="particles"></div>
+
+<!-- ====== 邀请卡 ====== -->
+<div class="invite-page" id="invitePage">
+  <div class="invite-card">
+    <div class="corner c-tl"></div>
+    <div class="corner c-tr"></div>
+    <div class="corner c-bl"></div>
+    <div class="corner c-br"></div>
+    <div class="envelope-top">
+      <div class="orn-line">
+        <span></span>
+        <div class="diamond"></div>
+        <span></span>
+      </div>
+    </div>
+    <span class="invite-emoji">🥂</span>
+    <div class="invite-label">Dinner Invitation</div>
+    <div class="invite-name">龚胤僮 女士</div>
+    <div class="invite-text">
+      您的先生邀请您<br>
+      共享<strong>今晚晚餐</strong><br>
+      期待与您共度美好时光
+    </div>
+    <div class="invite-divider">
+      <div class="id-line"></div>
+      <div class="id-dot"></div>
+      <div class="id-dot"></div>
+      <div class="id-dot"></div>
+      <div class="id-line"></div>
+    </div>
+    <button class="open-btn" onclick="openMenu()">
+      <span class="btn-icon">✉️</span>
+      启 封
+    </button>
+    <div class="invite-hint">点击启封查看今晚菜单</div>
+  </div>
+</div>
+
+<!-- ====== 菜单 ====== -->
+<div class="menu-page" id="menuPage">
+  <div class="menu-header">
+    <div class="mh-orn">
+      <span></span>
+      <div class="mh-diamond"></div>
+      <span></span>
+    </div>
+    <div class="mh-sub">Tonight's Menu</div>
+    <h1>微醺晚餐</h1>
+    <div class="mh-en">Cocktails & Dinner</div>
+    <div class="mh-orn2">
+      <div class="dot"></div>
+      <div class="dot"></div>
+      <div class="dot"></div>
+      <div class="dot"></div>
+      <div class="dot"></div>
+    </div>
+  </div>
+
+  <div class="dish-list">
+    <div class="menu-sep">
+      <div class="ms-l"></div>
+      <div class="ms-sym">✦</div>
+      <div class="ms-l"></div>
+    </div>
+
+    <!-- 芥末虾球 -->
+    <div class="dish-card shrimp" data-delay="0">
+      <div class="dish-inner">
+        <div class="dish-visual">
+          <span class="dish-emoji">🍤</span>
+          <span class="dish-visual-label">Appetizer</span>
+        </div>
+        <div class="dish-body">
+          <div class="dish-num">— 01 —</div>
+          <div class="dish-name">芥末虾球</div>
+          <div class="dish-desc">鲜弹虾仁裹以细腻芥末酱，微辛回甘，一口惊艳</div>
+          <div class="dish-tag"><span class="tag-dot"></span>开胃前菜</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="menu-sep">
+      <div class="ms-l"></div>
+      <div class="ms-sym">✦</div>
+      <div class="ms-l"></div>
+    </div>
+
+    <!-- 麻辣小龙虾 -->
+    <div class="dish-card crayfish" data-delay="120">
+      <div class="dish-inner">
+        <div class="dish-visual">
+          <span class="dish-emoji">🦞</span>
+          <span class="dish-visual-label">Signature</span>
+        </div>
+        <div class="dish-body">
+          <div class="dish-num">— 02 —</div>
+          <div class="dish-name">麻辣小龙虾</div>
+          <div class="dish-desc">红亮麻辣，鲜香入魂，今夜放纵的代表</div>
+          <div class="dish-tag"><span class="tag-dot"></span>招牌主菜</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="menu-sep">
+      <div class="ms-l"></div>
+      <div class="ms-sym">✦</div>
+      <div class="ms-l"></div>
+    </div>
+
+    <!-- 鸡丝凉面 -->
+    <div class="dish-card noodle" data-delay="240">
+      <div class="dish-inner">
+        <div class="dish-visual">
+          <span class="dish-emoji">🍜</span>
+          <span class="dish-visual-label">Main</span>
+        </div>
+        <div class="dish-body">
+          <div class="dish-num">— 03 —</div>
+          <div class="dish-name">鸡丝凉面</div>
+          <div class="dish-desc">麻辣鲜香一碗装，清爽与浓烈并存</div>
+          <div class="dish-tag"><span class="tag-dot"></span>主食担当</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="menu-sep">
+      <div class="ms-l"></div>
+      <div class="ms-sym">✦</div>
+      <div class="ms-l"></div>
+    </div>
+
+    <!-- 冰镇西瓜 -->
+    <div class="dish-card watermelon" data-delay="360">
+      <div class="dish-inner">
+        <div class="dish-visual">
+          <span class="dish-emoji">🍉</span>
+          <span class="dish-visual-label">Dessert</span>
+        </div>
+        <div class="dish-body">
+          <div class="dish-num">— 04 —</div>
+          <div class="dish-name">冰镇西瓜</div>
+          <div class="dish-desc">清凉收尾，甜蜜如夏夜的最后一个吻</div>
+          <div class="dish-tag"><span class="tag-dot"></span>甜蜜收尾</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="menu-sep">
+      <div class="ms-l"></div>
+      <div class="ms-sym">✦</div>
+      <div class="ms-l"></div>
+    </div>
+  </div>
+
+  <div class="menu-footer" id="menuFooter">
+    <div class="footer-letter">
+      <em>愿您有个美好的夜晚～</em>
+    </div>
+    <div class="footer-orn">
+      <div class="fo-l"></div>
+      <div class="fo-d"></div>
+      <div class="fo-l"></div>
+    </div>
+    <div class="footer-date" id="dateDisplay"></div>
+    <div class="footer-love">🤍</div>
+  </div>
+</div>
+
+<script>
+  // 日期
+  var n = new Date();
+  var y = n.getFullYear();
+  var m = String(n.getMonth()+1).padStart(2,'0');
+  var d = String(n.getDate()).padStart(2,'0');
+  var w = ['星期日','星期一','星期二','星期三','星期四','星期五','星期六'][n.getDay()];
+  document.getElementById('dateDisplay').textContent = y+'.'+m+'.'+d+' · '+w;
+
+  // 背景粒子
+  var pc = document.getElementById('particles');
+  for (var i = 0; i < 20; i++) {
+    var p = document.createElement('div');
+    p.className = 'particle';
+    p.style.left = Math.random() * 100 + '%';
+    p.style.width = (1 + Math.random() * 2) + 'px';
+    p.style.height = p.style.width;
+    p.style.animationDuration = (12 + Math.random() * 20) + 's';
+    p.style.animationDelay = (Math.random() * 15) + 's';
+    p.style.opacity = 0.08 + Math.random() * 0.12;
+    pc.appendChild(p);
+  }
+
+  // 启封（兼容微信点击）
+  function openMenu() {
+    var invite = document.getElementById('invitePage');
+    var menu = document.getElementById('menuPage');
+
+    invite.classList.add('hiding');
+
+    setTimeout(function() {
+      invite.style.display = 'none';
+      menu.classList.add('showing');
+
+      var cards = document.querySelectorAll('.dish-card');
+      cards.forEach(function(card, i) {
+        var delay = parseInt(card.getAttribute('data-delay')) || 0;
+        setTimeout(function() {
+          card.classList.add('visible');
+        }, 500 + delay);
+      });
+
+      setTimeout(function() {
+        document.getElementById('menuFooter').classList.add('visible');
+      }, 1400);
+
+    }, 600);
+  }
+
+  // 微信兼容：禁止页面缩放
+  document.addEventListener('touchstart', function(e) {
+    if (e.touches.length > 1) {
+      e.preventDefault();
+    }
+  }, { passive: false });
+  var lastTouchEnd = 0;
+  document.addEventListener('touchend', function(e) {
+    var now = (new Date()).getTime();
+    if (now - lastTouchEnd <= 300) {
+      e.preventDefault();
+    }
+    lastTouchEnd = now;
+  }, { passive: false });
+</script>
+
+</body>
+</html>
