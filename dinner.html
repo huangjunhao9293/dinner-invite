@@ -151,10 +151,24 @@
     text-transform: uppercase; color: var(--gold); margin-bottom: 14px; font-weight: 500;
   }
 
-  .menu-header h1 {
+  .mh-title-wrap {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 20px;
+  }
+  .mh-title-wrap h1 {
     font-family:'STSong', 'Noto Serif SC', serif; font-size: 36px; font-weight: 700;
     color: var(--cream); letter-spacing: 10px; margin-bottom: 10px;
     text-shadow: 0 0 40px rgba(201,169,110,0.08);
+  }
+  .mh-photo {
+    width: 70px;
+    height: 70px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 2px solid var(--gold);
+    box-shadow: 0 4px 20px rgba(201,169,110,0.3);
   }
 
   .mh-en {
@@ -164,6 +178,23 @@
 
   .mh-orn2 { margin-top: 20px; display: flex; align-items: center; justify-content: center; gap: 6px; }
   .mh-orn2 .dot { width: 2px; height: 2px; border-radius: 50%; background: var(--gold-dim); }
+
+  /* 浪漫引言 */
+  .romance-intro {
+    text-align: center;
+    padding: 30px 20px;
+    opacity: 0;
+    transform: translateY(20px);
+    animation: fadeInUp 0.8s ease 0.5s forwards;
+  }
+  .romance-intro p {
+    font-family: 'STSong', 'Noto Serif SC', serif;
+    font-size: 16px;
+    color: var(--gold-light);
+    letter-spacing: 4px;
+    line-height: 2;
+    font-weight: 400;
+  }
 
   /* 菜品列表 */
   .dish-list { padding: 20px 20px 0; max-width: 500px; margin: 0 auto; position: relative; z-index: 1; }
@@ -391,7 +422,10 @@
       <span></span>
     </div>
     <div class="mh-sub">Tonight's Menu</div>
-    <h1>微醺晚餐</h1>
+    <div class="mh-title-wrap">
+      <h1>微醺晚餐</h1>
+      <img class="mh-photo" src="./1.jpeg" alt="照片">
+    </div>
     <div class="mh-en">Cocktails & Dinner</div>
     <div class="mh-orn2">
       <div class="dot"></div>
@@ -403,6 +437,12 @@
   </div>
 
   <div class="dish-list">
+    <!-- 浪漫引言 -->
+    <div class="romance-intro">
+      <p>与您共度的每一刻</p>
+      <p>都是最珍贵的时光</p>
+    </div>
+
     <div class="menu-sep">
       <div class="ms-l"></div>
       <div class="ms-sym">✦</div>
