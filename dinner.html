@@ -532,8 +532,8 @@
   function switchPage(hideEl, showEl) {
     hideEl.classList.remove('page-active');
     hideEl.classList.add('page-hidden-left');
-    
-    showEl.classList.remove('page-hidden');
+
+    showEl.classList.remove('page-hidden', 'page-hidden-left');
     showEl.classList.add('page-active');
   }
 
